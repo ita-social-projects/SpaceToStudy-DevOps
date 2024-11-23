@@ -2,7 +2,7 @@ name: Backup and Test MongoDB Atlas
 
 on:
   schedule:
-    - cron: '0 4 * * *'   # Everyday at 4 am
+    - cron: '0 2 * * *'   # Everyday at 2 am (UTC 0) | 4am (UTC 2)
   workflow_dispatch:      # Possibility to launch manualy
 
 jobs:
