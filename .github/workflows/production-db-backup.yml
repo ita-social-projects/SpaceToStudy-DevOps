@@ -1,9 +1,15 @@
-name: Backup MongoDB Atlas db-production
+name: Backup MongoDB Atlas db-dev
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # Everyday at 2 am (UTC 0) | 4am (UTC 2)
-  workflow_dispatch:      # Possibility to launch manualy
+    - cron: '30 2 * * *'   # Everyday at 2:30 am (UTC 0) | 4:30 am (UTC 2)
+  workflow_dispatch:      # Possibility to launch manually
+
+env:
+  DB_SOURCE: db-production
+  DB_SOURCE_URL: ${{ secrets.MONGODB_PROD_URL }}
+  DB_TEST: db-test
+  DB_TEST_URL: ${{ secrets.MONGODB_TEST_URL }}
 
 jobs:
   backup-and-test:
@@ -12,7 +18,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
+    
+      - name: Set Date env
+        id: set-date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+      
       - name: Install Dependencies
         run: |
           sudo apt update         
@@ -22,35 +32,39 @@ jobs:
 
       - name: Create MongoDB Dump
         env:
-          PROD_MONGODB_URL: ${{ secrets.PROD_MONGODB_URL }}
+          TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          today=$(date +"%Y-%m-%d")
-          mongodump --uri="$PROD_MONGODB_URL" -d db-production --out=backup-db-production-$today
+          mongodump --out=backup-$DB_SOURCE-$TODAY --uri="$DB_SOURCE_URL" -d $DB_SOURCE
 
       - name: Restore Dump to MongoDB Atlas Test Cluster
         env:
-          TEST_MONGODB_URL: ${{ secrets.TEST_MONGODB_URL }}
+          TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          today=$(date +"%Y-%m-%d")
-          mongorestore --uri="$TEST_MONGODB_URL" backup-db-production-$today --nsFrom="db-production.*" --nsTo="db-test.*" --drop
+          mongorestore \
+          backup-$DB_SOURCE-$TODAY \
+          --uri="$DB_TEST_URL" \
+          --nsInclude="$DB_SOURCE.*" \
+          --nsFrom="$DB_SOURCE.*" \
+          --nsTo="$DB_TEST.*" \
+          --drop 
 
       - name: Encrypt Dump
         env:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          today=$(date +"%Y-%m-%d")
-          tar -czf backup-db-production-$today.tar.gz backup-db-production-$today
-          openssl enc -aes-256-cbc -salt -in backup-db-production-$today.tar.gz -out backup-db-production-$today.tar.gz.enc -k "$ENCRYPTION_KEY"
-          rm -rf backup-db-production-$today backup-db-production-$today.tar.gz
+          tar -czf backup-$DB_SOURCE-$TODAY.tar.gz backup-$DB_SOURCE-$TODAY
+          openssl enc -aes-256-cbc -salt -in backup-$DB_SOURCE-$TODAY.tar.gz -out backup-$DB_SOURCE-$TODAY.tar.gz.enc -k "$ENCRYPTION_KEY"
+          rm -rf backup-$DB_SOURCE-$TODAY backup-$DB_SOURCE-$TODAY.tar.gz
           
       - name: Upload Dump to Azure Storage
         env:
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          today=$(date +"%Y-%m-%d")
           az storage blob upload \
             --container-name db-backups \
-            --file backup-db-production-$today.tar.gz.enc \
-            --name backup-db-production-$today.tar.gz.enc \
+            --file backup-$DB_SOURCE-$TODAY.tar.gz.enc \
+            --name backup-$DB_SOURCE-$TODAY.tar.gz.enc \
             --overwrite \
             --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
