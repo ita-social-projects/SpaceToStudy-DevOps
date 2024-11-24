@@ -30,17 +30,17 @@ jobs:
 
       - name: Create MongoDB Dump
         env:
-          DEV_MONGODB_URL: ${{ secrets.DEV_MONGODB_URL }}
+          MONGODB_DEV_URL: ${{ secrets.MONGODB_DEV_URL }}
           TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          mongodump --uri="$DEV_MONGODB_URL" -d $DB_SOURCE --out=backup-$DB_SOURCE-$TODAY
+          mongodump --uri="$MONGODB_DEV_URL" -d $DB_SOURCE --out=backup-$DB_SOURCE-$TODAY
 
       - name: Restore Dump to MongoDB Atlas Test Cluster
         env:
-          TEST_MONGODB_URL: ${{ secrets.TEST_MONGODB_URL }}
+          MONGODB_TEST_URL: ${{ secrets.MONGODB_TEST_URL }}
           TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          mongorestore --uri="$TEST_MONGODB_URL" backup-$DB_SOURCE-$TODAY --nsFrom="$DB_SOURCE.*" --nsTo="$DB_TEST.*" --drop
+          mongorestore --uri="$MONGODB_TEST_URL" backup-$DB_SOURCE-$TODAY --nsFrom="$DB_SOURCE.*" --nsTo="$DB_TEST.*" --drop
 
       - name: Encrypt Dump
         env:
