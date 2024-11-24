@@ -1,4 +1,4 @@
-name: Backup MongoDB Atlas db-dev
+name: Backup MongoDB Atlas db-production
 
 on:
   schedule:
