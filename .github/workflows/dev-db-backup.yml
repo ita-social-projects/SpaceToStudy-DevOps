@@ -25,23 +25,23 @@ jobs:
           DEV_MONGODB_URL: ${{ secrets.DEV_MONGODB_URL }}
         run: |
           today=$(date +"%Y-%m-%d")
-          mongodump --uri="$DEV_MONGODB_URL" -d db-production --out=backup-db-production-$today
+          mongodump --uri="$DEV_MONGODB_URL" -d db-dev --out=backup-db-dev-$today
 
       - name: Restore Dump to MongoDB Atlas Test Cluster
         env:
           TEST_MONGODB_URL: ${{ secrets.TEST_MONGODB_URL }}
         run: |
           today=$(date +"%Y-%m-%d")
-          mongorestore --uri="$TEST_MONGODB_URL" backup-db-production-$today --nsFrom="db-production.*" --nsTo="db-test.*" --drop
+          mongorestore --uri="$TEST_MONGODB_URL" backup-db-dev-$today --nsFrom="db-dev.*" --nsTo="db-test.*" --drop
 
       - name: Encrypt Dump
         env:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
         run: |
           today=$(date +"%Y-%m-%d")
-          tar -czf backup-db-production-$today.tar.gz backup-db-production-$today
-          openssl enc -aes-256-cbc -salt -in backup-db-production-$today.tar.gz -out backup-db-production-$today.tar.gz.enc -k "$ENCRYPTION_KEY"
-          rm -rf backup-db-production-$today backup-db-production-$today.tar.gz
+          tar -czf backup-db-dev-$today.tar.gz backup-db-dev-$today
+          openssl enc -aes-256-cbc -salt -in backup-db-dev-$today.tar.gz -out backup-db-dev-$today.tar.gz.enc -k "$ENCRYPTION_KEY"
+          rm -rf backup-db-dev-$today backup-db-dev-$today.tar.gz
           
       - name: Upload Dump to Azure Storage
         env:
