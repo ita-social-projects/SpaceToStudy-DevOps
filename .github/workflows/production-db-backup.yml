@@ -34,7 +34,10 @@ jobs:
         env:
           TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          mongodump --out=backup-$DB_SOURCE-$TODAY --uri="$DB_SOURCE_URL" -d $DB_SOURCE
+          mongodump \
+          --out=backup-$DB_SOURCE-$TODAY \
+          --uri="$DB_SOURCE_URL" \
+          -d $DB_SOURCE
 
       - name: Restore Dump to MongoDB Atlas Test Cluster
         env:
