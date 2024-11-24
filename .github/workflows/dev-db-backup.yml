@@ -40,7 +40,7 @@ jobs:
           MONGODB_TEST_URL: ${{ secrets.MONGODB_TEST_URL }}
           TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          mongorestore --uri="$MONGODB_TEST_URL" backup-$DB_SOURCE-$TODAY --nsFrom="$DB_SOURCE.*" --nsTo="$DB_TEST.*" --drop
+          mongorestore --uri="$MONGODB_TEST_URL" backup-$DB_SOURCE-$TODAY --nsInclude="$DB_SOURCE.*" --nsFrom="$DB_SOURCE.*" --nsTo="$DB_TEST.*" --drop 
 
       - name: Encrypt Dump
         env:
