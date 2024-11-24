@@ -7,7 +7,9 @@ on:
 
 env:
   DB_SOURCE: db-dev
+  DB_SOURCE_URL: ${{ secrets.MONGODB_DEV_URL }}
   DB_TEST: db-test
+  DB_TEST_URL: ${{ secrets.MONGODB_TEST_URL }}
 
 jobs:
   backup-and-test:
@@ -17,7 +19,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
     
-      - name: Set Date
+      - name: Set Date env
         id: set-date
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
       
@@ -30,17 +32,21 @@ jobs:
 
       - name: Create MongoDB Dump
         env:
-          MONGODB_DEV_URL: ${{ secrets.MONGODB_DEV_URL }}
           TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          mongodump --uri="$MONGODB_DEV_URL" -d $DB_SOURCE --out=backup-$DB_SOURCE-$TODAY
+          mongodump --out=backup-$DB_SOURCE-$TODAY --uri="$DB_SOURCE_URL" -d $DB_SOURCE
 
       - name: Restore Dump to MongoDB Atlas Test Cluster
         env:
-          MONGODB_TEST_URL: ${{ secrets.MONGODB_TEST_URL }}
           TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          mongorestore --uri="$MONGODB_TEST_URL" backup-$DB_SOURCE-$TODAY --nsInclude="$DB_SOURCE.*" --nsFrom="$DB_SOURCE.*" --nsTo="$DB_TEST.*" --drop 
+          mongorestore \
+          backup-$DB_SOURCE-$TODAY \
+          --uri="$DB_TEST_URL" \
+          --nsInclude="$DB_SOURCE.*" \
+          --nsFrom="$DB_SOURCE.*" \
+          --nsTo="$DB_TEST.*" \
+          --drop 
 
       - name: Encrypt Dump
         env:
