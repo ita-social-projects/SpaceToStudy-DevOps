@@ -3,7 +3,11 @@ name: Backup MongoDB Atlas db-dev
 on:
   schedule:
     - cron: '30 2 * * *'   # Everyday at 2:30 am (UTC 0) | 4:30 am (UTC 2)
-  workflow_dispatch:      # Possibility to launch manualy
+  workflow_dispatch:      # Possibility to launch manually
+
+env:
+  DB_SOURCE: db-dev
+  DB_TEST: db-test
 
 jobs:
   backup-and-test:
@@ -12,7 +16,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
+    
+      - name: Set Date
+        id: set-date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+      
       - name: Install Dependencies
         run: |
           sudo apt update         
@@ -23,34 +31,34 @@ jobs:
       - name: Create MongoDB Dump
         env:
           DEV_MONGODB_URL: ${{ secrets.DEV_MONGODB_URL }}
+          TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          today=$(date +"%Y-%m-%d")
-          mongodump --uri="$DEV_MONGODB_URL" -d db-dev --out=backup-db-dev-$today
+          mongodump --uri="$DEV_MONGODB_URL" -d $DB_SOURCE --out=backup-$DB_SOURCE-$TODAY
 
       - name: Restore Dump to MongoDB Atlas Test Cluster
         env:
           TEST_MONGODB_URL: ${{ secrets.TEST_MONGODB_URL }}
+          TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          today=$(date +"%Y-%m-%d")
-          mongorestore --uri="$TEST_MONGODB_URL" backup-db-dev-$today --nsFrom="db-dev.*" --nsTo="db-test.*" --drop
+          mongorestore --uri="$TEST_MONGODB_URL" backup-$DB_SOURCE-$TODAY --nsFrom="$DB_SOURCE.*" --nsTo="$DB_TEST.*" --drop
 
       - name: Encrypt Dump
         env:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          today=$(date +"%Y-%m-%d")
-          tar -czf backup-db-dev-$today.tar.gz backup-db-dev-$today
-          openssl enc -aes-256-cbc -salt -in backup-db-dev-$today.tar.gz -out backup-db-dev-$today.tar.gz.enc -k "$ENCRYPTION_KEY"
-          rm -rf backup-db-dev-$today backup-db-dev-$today.tar.gz
+          tar -czf backup-$DB_SOURCE-$TODAY.tar.gz backup-$DB_SOURCE-$TODAY
+          openssl enc -aes-256-cbc -salt -in backup-$DB_SOURCE-$TODAY.tar.gz -out backup-$DB_SOURCE-$TODAY.tar.gz.enc -k "$ENCRYPTION_KEY"
+          rm -rf backup-$DB_SOURCE-$TODAY backup-$DB_SOURCE-$TODAY.tar.gz
           
       - name: Upload Dump to Azure Storage
         env:
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          TODAY: ${{ steps.set-date.outputs.date }}
         run: |
-          today=$(date +"%Y-%m-%d")
           az storage blob upload \
             --container-name db-backups \
-            --file backup-db-dev-$today.tar.gz.enc \
-            --name backup-db-dev-$today.tar.gz.enc \
+            --file backup-$DB_SOURCE-$TODAY.tar.gz.enc \
+            --name backup-$DB_SOURCE-$TODAY.tar.gz.enc \
             --overwrite \
             --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
