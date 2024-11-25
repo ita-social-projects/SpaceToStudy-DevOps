@@ -2,7 +2,7 @@ name: Backup MongoDB Atlas db-dev
 
 on:
   schedule:
-    - cron: '30 2 * * *'   # Everyday at 2:30 am (UTC 0) | 4:30 am (UTC 2)
+    - cron: '0 3 * * *'   # Everyday at 3:00 am (UTC 0) | 5:00 am (UTC 2)
   workflow_dispatch:      # Possibility to launch manually
 
 env:
