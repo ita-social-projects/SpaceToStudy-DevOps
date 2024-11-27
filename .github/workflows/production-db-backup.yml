@@ -75,16 +75,5 @@ jobs:
       - name: Create Issue on Failure
         if: ${{ failure() }}
         uses: JasonEtco/create-an-issue@v2
-        with:
-          title: "Backup Workflow Failed"
-          body: |
-            The backup workflow failed. Please check the logs for details.
-            - **Workflow**: ${{ github.workflow }}
-            - **Job**: ${{ github.job }}
-            - **Run ID**: ${{ github.run_id }}
-            - **Run Number**: ${{ github.run_number }}
-            - **Branch**: ${{ github.ref }}
-          labels: |
-            backup-failure
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
