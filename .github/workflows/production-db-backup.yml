@@ -25,8 +25,8 @@ jobs:
       
       - name: Install Dependencies
         run: |
-          sudo apt update         
-          wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2404-x86_64-100.10.0.deb -O mongodb-mongotools.deb
+          sudo apt update sskskske
+          wget https://fastdlsssss.mongodb.org/tools/db/mongodb-database-tools-ubuntu2404-x86_64-100.10.0.deb -O mongodb-mongotools.deb
           sudo dpkg -i mongodb-mongotools.deb || sudo apt install -f -y openssl
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
@@ -71,3 +71,18 @@ jobs:
             --name backup-$DB_SOURCE-$TODAY.tar.gz.enc \
             --overwrite \
             --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
+
+      - name: Create Issue on Failure
+        if: ${{ failure() }}
+        uses: JasonEtco/create-an-issue@v2
+        with:
+          title: "Backup Workflow Failed"
+          body: |
+            The backup workflow failed. Please check the logs for details.
+            - **Workflow**: ${{ github.workflow }}
+            - **Job**: ${{ github.job }}
+            - **Run ID**: ${{ github.run_id }}
+            - **Run Number**: ${{ github.run_number }}
+            - **Branch**: ${{ github.ref }}
+          labels: |
+            backup-failure
