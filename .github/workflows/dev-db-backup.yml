@@ -71,3 +71,11 @@ jobs:
             --name backup-$DB_SOURCE-$TODAY.tar.gz.enc \
             --overwrite \
             --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
+      
+      - name: Create Issue on Failure
+        if: ${{ failure() }}
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: .github/issue-db-dev.md
