@@ -71,7 +71,17 @@ jobs:
             --name backup-$DB_SOURCE-$TODAY.tar.gz.enc \
             --overwrite \
             --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
-      
+
+      - name: Generate Download Link
+        env:
+          TODAY: ${{ steps.set-date.outputs.date }}
+        run: |
+          BACKUP_FILE="backup-$DB_SOURCE-$TODAY.tar.gz.enc"
+          AZURE_URL="https://s2sbackups.blob.core.windows.net/db-backups/$BACKUP_FILE"
+          
+          echo "### Backup Uploaded ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- 📂 [Download Backup]($AZURE_URL)" >> $GITHUB_STEP_SUMMARY
+
       - name: Create Issue on Failure
         if: ${{ failure() }}
         uses: JasonEtco/create-an-issue@v2
