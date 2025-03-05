@@ -1,9 +1,9 @@
 name: Backup MongoDB Atlas db-production
 
 on:
+  workflow_dispatch:      # Possibility to launch manually
   schedule:
     - cron: '0 2 * * *'   # Everyday at 2:00 am (UTC 0) | 4:00 am (UTC 2)
-  workflow_dispatch:      # Possibility to launch manually
 
 env:
   DB_SOURCE: db-production
